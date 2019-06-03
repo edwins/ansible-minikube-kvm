@@ -1,0 +1,61 @@
+---
+- name: install dependencies
+  apt:
+    name:
+    - qemu-kvm
+    - libvirt-bin
+    - libvirt-daemon-system
+    - virtinst
+    - bridge-utils
+    - cpu-checker
+    - curl
+
+- name: minimally configure ufw
+  ufw:
+    state: enabled
+    rule: allow
+    port: ssh
+
+- name: kvm-ok test
+  command: kvm-ok
+  register: kvm_ok_test
+
+- name: fail if kvm-ok did not produce right output
+  fail:
+    msg: kvm_ok_test.stdout
+  when: kvm_ok_test.stdout.find("KVM acceleration can be used") == -1
+
+# install kubectl
+- name: download latest kubectl
+  shell: "curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+  args:
+    executable: /bin/bash
+
+- name: change permissions on kubectl
+  file:
+    path: /usr/local/bin/kubectl
+    mode: 0755
+
+# install minikube
+- name: install minikube binary 
+  get_url:
+    url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+    dest: /usr/local/bin/minikube
+    mode: 0755
+
+- name: install minikube kvm docker driver
+  get_url:
+    url: https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2
+    dest: /usr/local/bin/docker-machine-driver-kvm2
+    mode: 0755
+
+- name: set the default driver to be kvm docker
+  shell: "minikube config set vm-driver kvm2"
+
+- name: check the status of minikube
+  shell: /usr/local/bin/minikube status
+  register: minikube_status
+
+- name: start minikube if it's not running
+  shell: /usr/local/bin/minikube start
+  when: minikube_status.rc != 0

@@ -1,0 +1,10 @@
+# Note: replace ansible_host with the host name or ip address 
+all:
+  hosts:
+    my_minikube_host:
+      ansible_host: w.x.y.z
+      ansible_user: root
+  children:
+    minikube_hosts:
+      hosts:
+        my_minikube_host:
