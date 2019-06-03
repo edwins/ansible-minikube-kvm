@@ -55,6 +55,7 @@
 - name: check the status of minikube
   shell: /usr/local/bin/minikube status
   register: minikube_status
+  ignore_errors: yes
 
 - name: start minikube if it's not running
   shell: /usr/local/bin/minikube start
